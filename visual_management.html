@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>생산 현황 관리 (눈으로 보는 관리)</title>
+<style>
+:root{--ok:#2a9d4a;--warn:#e9a100;--bad:#d93a3a;--info:#3a7bd5;--ink:#1f2933;--mute:#6b7785;--line:#dfe4ea;--bg:#f4f6f9;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+header{background:#1f2d3d;color:#fff;padding:10px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+header h1{font-size:18px;margin:0 12px 0 0}
+header label{font-size:12px;color:#cdd6df}
+header input[type=date]{padding:3px 6px;border-radius:4px;border:0}
+header button{background:#3a4a5d;color:#fff;border:0;border-radius:4px;padding:6px 10px;cursor:pointer}
+header button:hover{background:#4b5e75}
+.wrap{display:flex;align-items:flex-start}
+nav{background:#2a3a4d;width:190px;flex:none;position:sticky;top:0;align-self:flex-start;min-height:calc(100vh - 52px);max-height:100vh;overflow-y:auto;padding:8px 0}
+nav .grp{color:#8fa2b7;font-size:11px;letter-spacing:.5px;padding:14px 18px 4px}
+nav button{display:block;width:100%;text-align:left;background:none;border:0;color:#cdd6df;padding:10px 18px;cursor:pointer;font:inherit;border-left:4px solid transparent}
+nav button:hover{background:#34465b}
+nav button.on{color:#fff;background:#1f2d3d;border-left-color:#4db1ff;font-weight:bold}
+main{flex:1;min-width:0;padding:16px 20px;max-width:1300px}
+@media screen and (max-width:1000px){nav{width:128px}nav .grp{padding:12px 10px 4px;font-size:10px}nav button{padding:9px 10px;font-size:13px}main{padding:12px}
+  .kps{grid-template-columns:repeat(3,1fr)}.sh-grid{grid-template-columns:1fr}.row{grid-template-columns:84px 1fr 104px}.panel{padding:10px}}
+@media screen and (max-width:420px){.wrap{display:block}nav{width:auto;position:static;min-height:0;max-height:none;display:flex;flex-wrap:wrap;padding:0 8px}nav .grp{display:none}nav button{width:auto;border-left:0;border-bottom:3px solid transparent;padding:10px 12px}nav button.on{border-bottom-color:#4db1ff}}
+.desc{color:var(--mute);margin:0 0 12px;font-size:13px}
+.grid{display:grid;gap:12px}
+.cards{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--mute);border-radius:8px;padding:12px 14px;cursor:pointer}
+.card.ok{border-left-color:var(--ok)}.card.warn{border-left-color:var(--warn)}.card.bad{border-left-color:var(--bad)}
+.card .l{color:var(--mute);font-size:12px}.card .v{font-size:28px;font-weight:bold;margin:2px 0}.card .s{font-size:12px;color:var(--mute)}
+.card.ok .v{color:var(--ok)}.card.warn .v{color:#b87f00}.card.bad .v{color:var(--bad)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
+.panel h3{margin:0 0 10px;font-size:15px}
+.two{grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))}
+.empty{color:var(--mute);padding:16px;text-align:center}
+.bar{background:#e8ecf1;border-radius:4px;height:16px;position:relative;overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:4px}
+.bar>u{position:absolute;top:0;bottom:0;width:2px;background:#1f2933;text-decoration:none}
+.c-ok{background:var(--ok)}.c-warn{background:var(--warn)}.c-bad{background:var(--bad)}.c-info{background:var(--info)}.c-mute{background:#aab4c0}
+.row{display:grid;grid-template-columns:130px 1fr 130px;gap:10px;align-items:center;padding:5px 0;font-size:13px}
+.row .r{text-align:right;color:var(--mute)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{border-radius:8px;padding:12px;color:#fff;min-height:84px}
+.tile.ok{background:var(--ok)}.tile.warn{background:var(--warn)}.tile.bad{background:var(--bad)}.tile.info{background:var(--info)}
+.tile b{font-size:16px;display:block}.tile span{font-size:12px;opacity:.95}
+.chip{display:inline-block;padding:1px 8px;border-radius:10px;color:#fff;font-size:12px}
+.alerts{margin:0;padding-left:18px}.alerts li{margin:3px 0}
+.t-bad{color:var(--bad);font-weight:bold}.t-warn{color:#b87f00;font-weight:bold}.t-ok{color:var(--ok)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border:1px solid var(--line);padding:3px 5px;text-align:left}
+th{background:#eef1f5;font-weight:600}
+table.in input,table.in select{width:100%;min-width:60px;border:1px solid transparent;background:transparent;padding:3px;font:inherit}
+table.in input:focus,table.in select:focus{border-color:#4db1ff;background:#fff;outline:0}
+table.in input[type=number]{min-width:70px;text-align:right}
+button.x{border:0;background:none;color:var(--bad);cursor:pointer;font-size:14px}
+.btns{margin:6px 0 14px;display:flex;gap:8px;flex-wrap:wrap}
+.btns button,.btn{border:1px solid #b9c3cf;background:#fff;border-radius:5px;padding:5px 10px;cursor:pointer;font:inherit}
+.btns button:hover{background:#eef3f8}
+details{margin-top:8px}summary{cursor:pointer;font-weight:bold;padding:8px 0}
+.ttl{margin:14px 0 4px;font-weight:bold}
+.chart{width:100%;max-width:760px;height:auto}
+.cfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.cfg label{display:flex;justify-content:space-between;gap:8px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+.cfg input{width:80px;text-align:right}
+.dropzone{display:block;border:2px dashed #9fb0c3;border-radius:10px;background:#f8fbff;padding:30px 20px;text-align:center;cursor:pointer;font-weight:bold}
+.dropzone:hover,.dropzone.over{background:#e8f2ff;border-color:var(--info)}
+.dropzone span{font-weight:normal;color:var(--mute);font-size:12px}
+.mini{font-size:12px;color:var(--mute);line-height:1.6}
+body.tv{font-size:18px}body.tv .card .v{font-size:44px}body.tv header,body.tv nav,body.tv details{display:none}
+.sheet{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}
+.sheet .panel{padding:8px 10px;margin-bottom:8px}.sheet .panel h3{font-size:13px;margin-bottom:6px}
+.sh-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid #1f2d3d;padding-bottom:6px;margin-bottom:10px}
+.sh-head h2{margin:0;font-size:20px}
+.kps{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:10px}
+.kp{border:1px solid var(--line);border-top:5px solid var(--mute);border-radius:6px;padding:6px 10px}
+.kp.ok{border-top-color:var(--ok)}.kp.warn{border-top-color:var(--warn)}.kp.bad{border-top-color:var(--bad)}
+.kp .l{font-size:11px;color:var(--mute)}.kp .v{font-size:20px;font-weight:bold}.kp .s{font-size:11px;color:var(--mute)}
+.kp.ok .v{color:var(--ok)}.kp.warn .v{color:#b87f00}.kp.bad .v{color:var(--bad)}
+.sh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sheet .tiles{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}.sheet .tile{min-height:0;padding:6px 8px}.sheet .tile b{font-size:13px}
+.sheet .row{padding:2px 0;font-size:12px}.sheet table{font-size:12px}.sheet .alerts{font-size:12px}
+.memo{font-size:13px;line-height:1.5;min-height:36px}
+@page{size:A4 landscape;margin:7mm}
+@media print{
+  header,nav,details,.btns,#desc{display:none}
+  body{background:#fff;font-size:11px}main{padding:0;max-width:none}
+  .sheet{border:0;padding:0;zoom:.82}.sheet .chart{max-height:200px}.sheet .desc{display:none}
+  .sheet,.panel,.kp{break-inside:avoid;page-break-inside:avoid}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>생산 현황 관리</h1>
+  <label>기준일 <input type="date" id="baseDate"></label>
+  <button data-act="sample">샘플 데이터 불러오기</button>
+  <button data-act="clear">전체 초기화</button>
+  <button data-act="tv">TV/전체화면</button>
+  <button data-act="print">인쇄</button>
+</header>
+<div class="wrap">
+<nav id="tabs"></nav>
+<main>
+  <p class="desc" id="desc"></p>
+  <section id="vis"></section>
+  <details open id="inwrap"><summary>입력 데이터 (여기에 값을 넣으면 위 화면이 바로 바뀝니다)</summary><div id="inputs"></div></details>
+</main>
+</div>
+
+<script>
+/* =====================================================================
+   생산 현황 관리 (눈으로 보는 관리)
+   구조: DB(입력값) -> calc/VIS(파트별 시각화) -> 화면
+   파트 추가: SCHEMA 에 입력표 정의 + PARTS 에 화면 함수 추가
+   ===================================================================== */
+const KEY = 'vm_dashboard_v1';
+const REASONS = ['고장', '자재대기', '금형/셋업', '품질조치', '작업자 부재', '기타'];
+const STATUS = ['가동', '셋업', '정지', '고장'];
+const DEFECTS = ['치수불량', '외관불량', '용접불량', '가공불량', '기타'];
+const ISSUE_ST = ['미조치', '조치중', '완료'];
+const CFG_DEF = {
+  achWarn: 95, achBad: 85, defWarn: 2, defBad: 5,
+  dueWarn: 2, issueWarn: 2, issueBad: 8, wipWarn: 80
+};
+const CFG_LABEL = {
+  achWarn: '달성률 정상 기준(%) 이상', achBad: '달성률 주의 하한(%) 미만=이상',
+  defWarn: '불량률 정상 기준(%) 이하', defBad: '불량률 주의 상한(%) 초과=이상',
+  dueWarn: '납기 임박 기준(일 이내)', issueWarn: '이슈 경과 주의(시간)', issueBad: '이슈 경과 이상(시간)',
+  wipWarn: '재공 주의 기준(한도 대비 %)'
+};
+
+/* ---------- 유틸 ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => Number(v) || 0;
+const pad = n => String(n).padStart(2, '0');
+const isoD = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const isoDT = d => isoD(d) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+const pdate = s => { const p = String(s).split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]); };
+const dayDiff = (a, b) => Math.round((pdate(a) - pdate(b)) / 864e5);
+const addDays = (s, n) => { const d = new Date(pdate(s) + n * 864e5); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); };
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const pct = (a, b) => b > 0 ? a / b * 100 : null;
+const hoursSince = s => { const t = s ? new Date(s).getTime() : NaN; return isNaN(t) ? 0 : Math.max(0, (Date.now() - t) / 36e5); };
+const slotMin = s => {   // 시간대 '08:00-17:30' / '8-17' → 분 (자정 넘김 허용), 해석 불가면 0
+  const m = String(s || '').match(/^\s*(\d{1,2})(?::(\d{2}))?\s*[-~]\s*(\d{1,2})(?::(\d{2}))?\s*$/);
+  if (!m) return 0;
+  let t = (+m[3] * 60 + +(m[4] || 0)) - (+m[1] * 60 + +(m[2] || 0));
+  if (t < 0) t += 1440;
+  return t;
+};
+const hrs = m => (m / 60).toFixed(1) + '시간';
+const dur = h => h < 1 ? Math.round(h * 60) + '분' : (h < 48 ? h.toFixed(1) + '시간' : Math.floor(h / 24) + '일');
+const hi = (v, w, b) => v == null ? 'mute' : v >= w ? 'ok' : v >= b ? 'warn' : 'bad';   // 클수록 좋은 지표
+const lo = (v, w, b) => v == null ? 'mute' : v <= w ? 'ok' : v <= b ? 'warn' : 'bad';   // 작을수록 좋은 지표
+const worst = (...l) => l.includes('bad') ? 'bad' : l.includes('warn') ? 'warn' : 'ok';
+
+/* ---------- 입력 스키마 (파트별 입력표) ---------- */
+const SCHEMA = {
+  perf: { title: '시간대별 계획·실적', cols: [
+    { k: 'date', l: '날짜', t: 'date' }, { k: 'line', l: '라인', t: 'text' }, { k: 'slot', l: '시간대', t: 'text' },
+    { k: 'target', l: '목표', t: 'number' }, { k: 'good', l: '양품', t: 'number' }, { k: 'defect', l: '불량', t: 'number' }],
+    def: () => ({ date: DB.base, line: '', slot: '', target: 0, good: 0, defect: 0 }) },
+  mstat: { title: '설비 현재 상태', cols: [
+    { k: 'name', l: '설비', t: 'text' }, { k: 'line', l: '라인', t: 'text' }, { k: 'status', l: '상태', t: 'select', o: STATUS },
+    { k: 'since', l: '상태 시작', t: 'datetime-local' }, { k: 'note', l: '메모', t: 'text' }],
+    def: () => ({ name: '', line: '', status: '가동', since: isoDT(new Date()), note: '' }) },
+  mdown: { title: '비가동 이력', cols: [
+    { k: 'date', l: '날짜', t: 'date' }, { k: 'name', l: '설비', t: 'text' },
+    { k: 'reason', l: '사유', t: 'text', dl: 'dl_reason' }, { k: 'min', l: '시간(분)', t: 'number' }],
+    def: () => ({ date: DB.base, name: '', reason: REASONS[0], min: 0 }) },
+  qual: { title: '불량 내역', cols: [
+    { k: 'date', l: '날짜', t: 'date' }, { k: 'proc', l: '발생 공정', t: 'text' },
+    { k: 'type', l: '불량 유형', t: 'text', dl: 'dl_defect' }, { k: 'qty', l: '수량', t: 'number' }],
+    def: () => ({ date: DB.base, proc: '', type: DEFECTS[0], qty: 0 }) },
+  wip: { title: '공정별 재공', cols: [
+    { k: 'proc', l: '공정', t: 'text' }, { k: 'qty', l: '재공 수량', t: 'number' }, { k: 'limit', l: '한도', t: 'number' }],
+    def: () => ({ proc: '', qty: 0, limit: 0 }) },
+  mat: { title: '자재 현황', cols: [
+    { k: 'item', l: '자재', t: 'text' }, { k: 'stock', l: '현재고', t: 'number' }, { k: 'need', l: '필요량', t: 'number' }],
+    def: () => ({ item: '', stock: 0, need: 0 }) },
+  orders: { title: '수주·납기', cols: [
+    { k: 'no', l: '수주번호', t: 'text' }, { k: 'cust', l: '고객', t: 'text' }, { k: 'item', l: '품목', t: 'text' },
+    { k: 'qty', l: '수량', t: 'number' }, { k: 'due', l: '납기', t: 'date' }, { k: 'done', l: '완료수량', t: 'number' }],
+    def: () => ({ no: '', cust: '', item: '', qty: 0, due: DB.base, done: 0 }) },
+  issues: { title: '이상·조치 이력', cols: [
+    { k: 'when', l: '발생 시각', t: 'datetime-local' }, { k: 'text', l: '내용', t: 'text' },
+    { k: 'owner', l: '담당', t: 'text' }, { k: 'status', l: '상태', t: 'select', o: ISSUE_ST }],
+    def: () => ({ when: isoDT(new Date()), text: '', owner: '', status: '미조치' }) }
+};
+
+/* ---------- 상태 저장 ---------- */
+function blank() {
+  const o = { base: isoD(new Date()), tab: 'home', cfg: Object.assign({}, CFG_DEF), memo: '', author: '', unit: '개', imp: { mode: 'theory', clear: false } };
+  Object.keys(SCHEMA).forEach(k => o[k] = []);
+  return o;
+}
+function load() {
+  const d = blank();
+  try { const s = localStorage.getItem(KEY); if (s) Object.assign(d, JSON.parse(s)); } catch (e) {}
+  d.cfg = Object.assign({}, CFG_DEF, d.cfg);
+  d.imp = Object.assign({ mode: 'theory', clear: false }, d.imp);
+  return d;
+}
+let DB = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) {} }
+
+/* ---------- 샘플 데이터 ---------- */
+function sample() {
+  const b = DB.base, now = Date.now(), ago = h => isoDT(new Date(now - h * 36e5));
+  DB.perf = [];
+  [['A라인', 300, [[292, 3], [300, 2], [285, 5], [270, 4]]], ['B라인', 250, [[240, 5], [205, 9], [190, 8], [170, 12]]]]
+    .forEach(([ln, t, arr]) => ['08-10', '10-12', '13-15', '15-17'].forEach((s, i) =>
+      DB.perf.push({ date: b, line: ln, slot: s, target: t, good: arr[i][0], defect: arr[i][1] })));
+  DB.mstat = [
+    { name: 'CNC-1', line: 'A라인', status: '가동', since: ago(6), note: '' },
+    { name: 'CNC-2', line: 'A라인', status: '고장', since: ago(2.5), note: '스핀들 진동 이상' },
+    { name: '프레스-1', line: 'A라인', status: '가동', since: ago(5), note: '' },
+    { name: '용접-1', line: 'B라인', status: '셋업', since: ago(0.5), note: 'P-100 → P-200 전환' },
+    { name: '조립-1', line: 'B라인', status: '가동', since: ago(4), note: '' },
+    { name: '검사-1', line: 'B라인', status: '가동', since: ago(7), note: '' }];
+  DB.mdown = [
+    { date: b, name: 'CNC-2', reason: '고장', min: 150 }, { date: b, name: '용접-1', reason: '금형/셋업', min: 30 },
+    { date: b, name: '프레스-1', reason: '자재대기', min: 45 }, { date: b, name: '조립-1', reason: '작업자 부재', min: 20 },
+    { date: b, name: '검사-1', reason: '기타', min: 10 }, { date: b, name: 'CNC-1', reason: '품질조치', min: 25 }];
+  DB.qual = [];
+  [[0, [18, 12, 10, 6, 2]], [-1, [10, 9, 8, 5, 2]], [-2, [12, 8, 4, 4, 1]], [-3, [9, 7, 6, 3, 1]], [-4, [8, 6, 5, 3, 2]]]
+    .forEach(([off, q]) => DEFECTS.forEach((t, i) => DB.qual.push({ date: addDays(b, off), proc: ['CNC', '검사', '용접', '프레스', '-'][i], type: t, qty: q[i] })));
+  DB.wip = [{ proc: '절단 후', qty: 420, limit: 500 }, { proc: '프레스 후', qty: 610, limit: 500 },
+    { proc: '용접 후', qty: 380, limit: 600 }, { proc: '조립 후', qty: 150, limit: 300 }, { proc: '검사 대기', qty: 280, limit: 250 }];
+  DB.mat = [{ item: 'R-01 강판(kg)', stock: 1800, need: 2500 }, { item: 'R-02 알루미늄(kg)', stock: 3000, need: 2000 },
+    { item: 'R-03 볼트(EA)', stock: 15000, need: 12000 }, { item: '포장박스(EA)', stock: 800, need: 1200 }];
+  DB.orders = [
+    { no: 'SO-001', cust: 'A사', item: 'P-100', qty: 3000, due: addDays(b, 3), done: 1200 },
+    { no: 'SO-002', cust: 'B사', item: 'P-200', qty: 2000, due: addDays(b, 1), done: 1500 },
+    { no: 'SO-003', cust: 'C사', item: 'P-300', qty: 2500, due: addDays(b, -1), done: 2100 },
+    { no: 'SO-004', cust: 'A사', item: 'P-100', qty: 1500, due: addDays(b, 10), done: 0 },
+    { no: 'SO-005', cust: 'D사', item: 'P-200', qty: 1800, due: addDays(b, -3), done: 1800 }];
+  DB.author = '생산관리팀장';
+  DB.memo = '(샘플) CNC-2 스핀들 수리 중으로 A라인 가공 지연. 강판 입고 지연 시 B라인 후공정 영향 우려. SO-002 잔량 500개 야간 특근 검토 필요.';
+  DB.issues = [
+    { when: ago(2.5), text: 'CNC-2 스핀들 진동 이상', owner: '설비팀', status: '조치중' },
+    { when: ago(9), text: '강판 납품 지연 (R-01)', owner: '구매팀', status: '미조치' },
+    { when: ago(0.3), text: '검사 기준 문의 (P-200 외관)', owner: '품질팀', status: '미조치' },
+    { when: ago(20), text: '용접 지그 교체', owner: '생산기술', status: '완료' }];
+  save();
+}
+
+/* ---------- 계산 (종합) ---------- */
+function calc() {
+  const c = DB.cfg, b = DB.base, r = {};
+  const perf = DB.perf.filter(x => x.date === b);
+  r.target = perf.reduce((s, x) => s + num(x.target), 0);
+  r.good = perf.reduce((s, x) => s + num(x.good), 0);
+  r.defect = perf.reduce((s, x) => s + num(x.defect), 0);
+  r.ach = pct(r.good, r.target);
+  r.defRate = pct(r.defect, r.good + r.defect);
+  r.mTotal = DB.mstat.length;
+  r.mRun = DB.mstat.filter(m => m.status === '가동').length;
+  r.mBad = DB.mstat.filter(m => m.status === '고장');
+  r.downMin = DB.mdown.filter(x => x.date === b).reduce((s, x) => s + num(x.min), 0);
+  r.totMin = perf.reduce((s, x) => s + slotMin(x.slot), 0);            // 총가동 시간 = 작업시간(시간대) 합계
+  r.netMin = Math.max(0, r.totMin - r.downMin);                         // 순가동 시간 = 총가동 − 비가동
+  r.wipOver = DB.wip.filter(w => num(w.limit) > 0 && num(w.qty) > num(w.limit));
+  r.matShort = DB.mat.filter(m => num(m.stock) < num(m.need));
+  r.orderSt = DB.orders.map(o => {
+    const left = num(o.qty) - num(o.done), d = o.due ? dayDiff(o.due, b) : 0;
+    const st = left <= 0 ? '완료' : d < 0 ? '지연' : d <= c.dueWarn ? '임박' : '정상';
+    return Object.assign({}, o, { left, d, st });
+  });
+  r.late = r.orderSt.filter(o => o.st === '지연');
+  r.soon = r.orderSt.filter(o => o.st === '임박');
+  r.open = DB.issues.filter(i => i.status !== '완료').map(i => Object.assign({}, i, { h: hoursSince(i.when) }))
+    .sort((x, y) => y.h - x.h);
+  r.issueBad = r.open.filter(i => i.h >= c.issueBad);
+  r.repIss = r.open.filter(i => !i._src || String(i.when).slice(0, 10) === b);   // 결과 리포트: 가져온 비고는 기준일 것만, 직접 입력 이슈는 미완료 전체
+  return r;
+}
+
+/* ---------- 화면 조각 ---------- */
+function bar(p, cls, limitPct) {
+  const w = Math.max(0, Math.min(100, p || 0));
+  return '<div class="bar"><i class="c-' + cls + '" style="width:' + w + '%"></i>' +
+    (limitPct != null ? '<u style="left:' + Math.min(100, limitPct) + '%"></u>' : '') + '</div>';
+}
+function chip(t, cls) { return '<span class="chip c-' + cls + '">' + esc(t) + '</span>'; }
+function panel(title, body) { return '<div class="panel"><h3>' + title + '</h3>' + body + '</div>'; }
+function empty(t) { return '<div class="empty">' + (t || '기준일의 입력 데이터가 없습니다.') + '</div>'; }
+function pareto(map, unit, top) {
+  const all = Object.entries(map).filter(e => e[1] > 0).sort((a, b) => b[1] - a[1]);
+  if (!all.length) return empty();
+  const arr = top ? all.slice(0, top) : all;
+  const tot = all.reduce((s, e) => s + e[1], 0), max = arr[0][1];
+  let cum = 0;
+  return arr.map(e => {
+    cum += e[1];
+    return '<div class="row"><div>' + esc(e[0]) + '</div>' + bar(e[1] / max * 100, 'info') +
+      '<div class="r">' + fmt(e[1]) + unit + ' · 누적 ' + Math.round(cum / tot * 100) + '%</div></div>';
+  }).join('');
+}
+function slotChart(g) {
+  const n = g.length, W = 680, H = n > 6 ? 262 : 240, pl = 44, pb = n > 6 ? 58 : 36, pt = 14;
+  const max = Math.max(1, ...g.map(x => Math.max(x.t, x.g))) * 1.15, ph = H - pt - pb;
+  const bw = Math.min(34, (W - pl - 10) / n / 3), col = { ok: '#2a9d4a', warn: '#e9a100', bad: '#d93a3a', mute: '#3a7bd5' };
+  let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '">';
+  for (let i = 0; i <= 4; i++) {
+    const y = pt + ph * (1 - i / 4);
+    s += '<line x1="' + pl + '" x2="' + (W - 6) + '" y1="' + y + '" y2="' + y + '" stroke="#e3e8ee"/>' +
+      '<text x="' + (pl - 6) + '" y="' + (y + 4) + '" font-size="11" text-anchor="end" fill="#6b7785">' + fmt(max * i / 4) + '</text>';
+  }
+  g.forEach((x, i) => {
+    const cx = pl + (W - pl - 10) * (i + .5) / n, ht = v => ph * v / max;
+    const p = pct(x.g, x.t), cl = col[hi(p, DB.cfg.achWarn, DB.cfg.achBad)];
+    s += '<rect x="' + (cx - bw - 1) + '" y="' + (pt + ph - ht(x.t)) + '" width="' + bw + '" height="' + ht(x.t) + '" fill="#c5ccd6"/>' +
+      '<rect x="' + (cx + 1) + '" y="' + (pt + ph - ht(x.g)) + '" width="' + bw + '" height="' + ht(x.g) + '" fill="' + cl + '"/>' +
+      (n > 6 ? '<text transform="rotate(-40 ' + cx + ' ' + (H - pb + 14) + ')" x="' + cx + '" y="' + (H - pb + 14) + '" font-size="11" text-anchor="end">' + esc(x.s) + '</text>'
+        : '<text x="' + cx + '" y="' + (H - pb + 16) + '" font-size="12" text-anchor="middle">' + esc(x.s) + '</text>') +
+      '<text x="' + (cx + 1 + bw / 2) + '" y="' + (pt + ph - ht(x.g) - 4) + '" font-size="11" text-anchor="middle" fill="' + cl + '">' +
+      (p == null ? '-' : Math.round(p) + '%') + '</text>';
+  });
+  return s + '</svg><div class="desc">회색=목표, 색 막대=양품(달성률에 따라 녹/황/적)</div>';
+}
+
+/* ---------- 파트별 화면 ---------- */
+function visHome() {
+  const c = DB.cfg, r = calc();
+  const cards = [
+    { l: '생산 달성률', v: r.ach == null ? '-' : r.ach.toFixed(1) + '%', s: fmt(r.good) + ' / ' + fmt(r.target), lv: hi(r.ach, c.achWarn, c.achBad), go: 'perf' },
+    { l: '불량률', v: r.defRate == null ? '-' : r.defRate.toFixed(2) + '%', s: '불량 ' + fmt(r.defect) + (DB.unit || '개'), lv: lo(r.defRate, c.defWarn, c.defBad), go: 'quality' },
+    { l: '총가동 시간', v: r.totMin ? hrs(r.totMin) : '-', s: r.totMin ? fmt(r.totMin) + '분 (작업시간 합계)' : '시간대 미입력', lv: 'mute', go: 'perf' },
+    { l: '순가동 시간', v: r.totMin ? hrs(r.netMin) : '-', s: r.totMin ? '비가동 ' + fmt(r.downMin) + '분 제외 · ' + (r.netMin / r.totMin * 100).toFixed(1) + '%' : '비가동 ' + fmt(r.downMin) + '분',
+      lv: 'mute', go: 'machine' },
+    { l: '납기 지연/임박', v: r.orderSt.length ? r.late.length + ' / ' + r.soon.length + '건' : '-', s: r.orderSt.length ? '지연 / 임박(' + c.dueWarn + '일 이내)' : '수주 미입력',
+      lv: !r.orderSt.length ? 'mute' : r.late.length ? 'bad' : (r.soon.length ? 'warn' : 'ok'), go: 'orders' },
+    { l: '재공·자재 경고', v: (DB.wip.length || DB.mat.length) ? (r.wipOver.length + r.matShort.length) + '건' : '-', s: (DB.wip.length || DB.mat.length) ? '재공초과 ' + r.wipOver.length + ' · 자재부족 ' + r.matShort.length : '재공·자재 미입력',
+      lv: !(DB.wip.length || DB.mat.length) ? 'mute' : r.matShort.length ? 'bad' : (r.wipOver.length ? 'warn' : 'ok'), go: 'wip' },
+    { l: '미조치·조치중 이슈', v: r.open.length + '건', s: r.open.length ? '최장 ' + dur(r.open[0].h) + ' 경과' : '없음',
+      lv: r.issueBad.length ? 'bad' : (r.open.length ? 'warn' : 'ok'), go: 'issues' }
+  ];
+  let h = '<div class="grid cards">' + cards.map(x => '<div class="card ' + x.lv + '" data-go="' + x.go + '"><div class="l">' + x.l +
+    '</div><div class="v">' + x.v + '</div><div class="s">' + x.s + '</div></div>').join('') + '</div>';
+  const al = [];
+  r.mBad.forEach(m => al.push('<span class="t-bad">[설비]</span> ' + esc(m.name) + ' 고장 ' + dur(hoursSince(m.since)) + ' 경과' + (m.note ? ' (' + esc(m.note) + ')' : '')));
+  r.late.forEach(o => al.push('<span class="t-bad">[납기]</span> ' + esc(o.no) + ' ' + esc(o.cust) + ' ' + Math.abs(o.d) + '일 지연 (잔량 ' + fmt(o.left) + ')'));
+  r.soon.forEach(o => al.push('<span class="t-warn">[납기]</span> ' + esc(o.no) + ' ' + esc(o.cust) + ' D-' + o.d + ' (잔량 ' + fmt(o.left) + ')'));
+  r.matShort.forEach(m => al.push('<span class="t-bad">[자재]</span> ' + esc(m.item) + ' 부족 ' + fmt(num(m.need) - num(m.stock))));
+  r.wipOver.forEach(w => al.push('<span class="t-warn">[재공]</span> ' + esc(w.proc) + ' 한도 초과 (' + fmt(w.qty) + ' / ' + fmt(w.limit) + ')'));
+  r.issueBad.forEach(i => al.push('<span class="t-bad">[이슈]</span> ' + esc(i.text) + ' ' + dur(i.h) + ' 경과 (' + esc(i.status) + ')'));
+  h += '<div style="height:12px"></div>' + panel('지금 확인할 항목', al.length ? '<ul class="alerts">' + al.map(x => '<li>' + x + '</li>').join('') + '</ul>' : '<div class="empty t-ok">모든 항목 정상입니다.</div>');
+  return h + '<p class="desc">카드를 누르면 해당 파트 화면으로 이동합니다. 색상 기준은 "기준·관리" 탭에서 바꿀 수 있습니다.</p>';
+}
+
+function perfData() {
+  const rows = DB.perf.filter(x => x.date === DB.base), slots = [], gm = {}, lines = {};
+  rows.forEach(x => {
+    const k = x.slot || '-';
+    if (!gm[k]) { gm[k] = { s: k, t: 0, g: 0 }; slots.push(gm[k]); }
+    gm[k].t += num(x.target); gm[k].g += num(x.good);
+    const l = x.line || '-';
+    lines[l] = lines[l] || { t: 0, g: 0, d: 0 };
+    lines[l].t += num(x.target); lines[l].g += num(x.good); lines[l].d += num(x.defect);
+  });
+  return { rows, slots, lines };
+}
+function lineBars(lines) {
+  const c = DB.cfg;
+  return Object.entries(lines).map(([k, v]) => {
+    const p = pct(v.g, v.t), dr = pct(v.d, v.g + v.d), lv = hi(p, c.achWarn, c.achBad);
+    return '<div class="row"><div>' + esc(k) + '</div>' + bar(p, lv, 100) + '<div class="r">' + (p == null ? '-' : p.toFixed(1) + '%') +
+      ' · 불량 ' + (dr == null ? '-' : dr.toFixed(1) + '%') + '</div></div>';
+  }).join('');
+}
+function visPerf() {
+  const pd = perfData();
+  if (!pd.rows.length) return panel('시간대별 계획 대비 실적', empty());
+  return '<div class="grid two">' + panel('시간대별 목표 vs 양품', slotChart(pd.slots)) +
+    panel('라인별 달성률 (검은 선=목표 100%)', lineBars(pd.lines)) + '</div>';
+}
+
+function visMachine() {
+  const b = DB.base, tile = { 가동: 'ok', 셋업: 'info', 정지: 'warn', 고장: 'bad' };
+  const t = DB.mstat.length ? '<div class="tiles">' + DB.mstat.map(m =>
+    '<div class="tile ' + tile[m.status] + '"><b>' + esc(m.name) + '</b><span>' + esc(m.line) + '</span><br><span>' + esc(m.status) +
+    (m.status !== '가동' ? ' · ' + dur(hoursSince(m.since)) : '') + '</span>' + (m.note ? '<br><span>' + esc(m.note) + '</span>' : '') + '</div>').join('') + '</div>' : empty('설비 상태를 입력하세요.');
+  const map = {}; DB.mdown.filter(x => x.date === b).forEach(x => map[x.reason] = (map[x.reason] || 0) + num(x.min));
+  const byM = {}; DB.mdown.filter(x => x.date === b).forEach(x => byM[x.name] = (byM[x.name] || 0) + num(x.min));
+  return panel('설비 현재 상태 (신호등)', t) + '<div class="grid two">' +
+    panel('비가동 사유별 (파레토, 기준일)', pareto(map, '분')) + panel('설비별 비가동 시간 (기준일)', pareto(byM, '분')) + '</div>';
+}
+
+function visQuality() {
+  const b = DB.base, c = DB.cfg, today = DB.qual.filter(x => x.date === b);
+  const map = {}; today.forEach(x => map[x.type] = (map[x.type] || 0) + num(x.qty));
+  const pm = {}; today.forEach(x => { const k = x.proc || '-'; pm[k] = (pm[k] || 0) + num(x.qty); });
+  const dates = [...new Set(DB.qual.map(x => x.date))].filter(d => d <= b).sort().slice(-7);
+  const sums = dates.map(d => DB.qual.filter(x => x.date === d).reduce((s, x) => s + num(x.qty), 0)), mx = Math.max(1, ...sums);
+  const trend = dates.length ? '<div style="display:flex;gap:10px;align-items:flex-end;height:150px">' + dates.map((d, i) =>
+    '<div style="flex:1;text-align:center;font-size:12px"><div style="height:' + (sums[i] / mx * 110) + 'px;background:' + (d === b ? '#d93a3a' : '#aab4c0') +
+    ';border-radius:4px 4px 0 0"></div>' + fmt(sums[i]) + '<br><span style="color:#6b7785">' + d.slice(5) + '</span></div>').join('') + '</div>' : empty('불량 내역을 입력하세요.');
+  const r = calc(), lv = lo(r.defRate, c.defWarn, c.defBad);
+  const head = '<div class="grid cards" style="margin-bottom:12px"><div class="card ' + lv + '"><div class="l">기준일 불량률 (계획·실적 파트 기준)</div><div class="v">' +
+    (r.defRate == null ? '-' : r.defRate.toFixed(2) + '%') + '</div><div class="s">정상 ≤' + c.defWarn + '% / 이상 >' + c.defBad + '%</div></div></div>';
+  return head + '<div class="grid two">' + panel('불량 유형별 (파레토, 기준일)', pareto(map, DB.unit || '개')) +
+    panel('발생 공정별 (기준일)', pareto(pm, DB.unit || '개')) + '</div>' + panel('최근 불량 수량 추이 (빨강=기준일)', trend);
+}
+
+function visWip() {
+  const c = DB.cfg;
+  const w = DB.wip.length ? DB.wip.map(x => {
+    const lim = num(x.limit), p = lim > 0 ? num(x.qty) / lim * 100 : 0, lv = !lim ? 'mute' : p > 100 ? 'bad' : p >= c.wipWarn ? 'warn' : 'ok';
+    return '<div class="row"><div>' + esc(x.proc) + '</div>' + bar(Math.min(p, 100), lv) + '<div class="r">' + fmt(x.qty) + ' / ' + fmt(lim) +
+      ' ' + (lv === 'bad' ? chip('초과', 'bad') : '') + '</div></div>';
+  }).join('') : empty('공정별 재공을 입력하세요.');
+  const m = DB.mat.length ? DB.mat.map(x => {
+    const n = num(x.need), s = num(x.stock), p = n > 0 ? s / n * 100 : 100, ok = s >= n;
+    return '<div class="row"><div>' + esc(x.item) + '</div>' + bar(Math.min(p, 100), ok ? 'ok' : 'bad') + '<div class="r">' + fmt(s) + ' / ' + fmt(n) + ' ' +
+      (ok ? '' : chip('부족 ' + fmt(n - s), 'bad')) + '</div></div>';
+  }).join('') : empty('자재 현황을 입력하세요.');
+  return '<div class="grid two">' + panel('공정별 재공 (한도 대비)', w) + panel('자재 현재고 vs 필요량', m) + '</div>';
+}
+
+function visOrders() {
+  const r = calc(), cm = { 완료: 'info', 지연: 'bad', 임박: 'warn', 정상: 'ok' };
+  const sorted = r.orderSt.slice().sort((a, b) => (a.due || '').localeCompare(b.due || ''));
+  const h = sorted.length ? sorted.map(o => {
+    const p = pct(num(o.done), num(o.qty)) || 0;
+    return '<div class="row" style="grid-template-columns:150px 1fr 210px"><div><b>' + esc(o.no) + '</b> ' + esc(o.cust) + '<br><span style="color:#6b7785">' + esc(o.item) + '</span></div>' +
+      bar(p, cm[o.st]) + '<div class="r">' + chip(o.st, cm[o.st]) + ' ' + Math.round(p) + '% · 납기 ' + esc((o.due || '').slice(5)) +
+      (o.st === '완료' ? '' : (o.d < 0 ? ' (D+' + Math.abs(o.d) + ')' : ' (D-' + o.d + ')')) + '</div></div>';
+  }).join('') : empty('수주를 입력하세요.');
+  const cnt = k => r.orderSt.filter(o => o.st === k).length;
+  return '<div class="grid cards" style="margin-bottom:12px">' + ['지연', '임박', '정상', '완료'].map(k =>
+    '<div class="card ' + (k === '지연' ? 'bad' : k === '임박' ? 'warn' : k === '정상' ? 'ok' : '') + '"><div class="l">' + k + '</div><div class="v">' + cnt(k) + '건</div></div>').join('') + '</div>' +
+    panel('수주별 진행률 (납기순)', h);
+}
+
+function visIssues() {
+  const c = DB.cfg, r = calc();
+  const list = r.open.length ? '<table><tr><th>경과</th><th>내용</th><th>담당</th><th>상태</th></tr>' + r.open.map(i => {
+    const lv = lo(i.h, c.issueWarn, c.issueBad);
+    return '<tr><td class="t-' + lv + '">' + dur(i.h) + '</td><td>' + esc(i.text) + '</td><td>' + esc(i.owner) + '</td><td>' + chip(i.status, i.status === '미조치' ? 'bad' : 'warn') + '</td></tr>';
+  }).join('') + '</table>' : '<div class="empty t-ok">미조치/조치중 이슈가 없습니다.</div>';
+  const cnt = k => DB.issues.filter(i => i.status === k).length;
+  return '<div class="grid cards" style="margin-bottom:12px">' + ISSUE_ST.map(k => '<div class="card ' + (k === '미조치' ? 'bad' : k === '조치중' ? 'warn' : 'ok') +
+    '"><div class="l">' + k + '</div><div class="v">' + cnt(k) + '건</div></div>').join('') + '</div>' + panel('조치 필요 이슈 (오래된 순)', list);
+}
+
+/* 최종 결과물: A4 한 장 요약 (인쇄 / PDF 저장) */
+function visReport() {
+  const c = DB.cfg, r = calc(), b = DB.base, pd = perfData();
+  const kp = (l, v, s, lv) => '<div class="kp ' + lv + '"><div class="l">' + l + '</div><div class="v">' + v + '</div><div class="s">' + s + '</div></div>';
+  const kpis = kp('생산 달성률', r.ach == null ? '-' : r.ach.toFixed(1) + '%', fmt(r.good) + ' / ' + fmt(r.target), hi(r.ach, c.achWarn, c.achBad)) +
+    kp('불량률', r.defRate == null ? '-' : r.defRate.toFixed(2) + '%', '불량 ' + fmt(r.defect) + (DB.unit || '개'), lo(r.defRate, c.defWarn, c.defBad)) +
+    kp('총가동 시간', r.totMin ? hrs(r.totMin) : '-', r.totMin ? fmt(r.totMin) + '분 (작업시간 합계)' : '시간대 미입력', 'mute') +
+    kp('순가동 시간', r.totMin ? hrs(r.netMin) : '-', r.totMin ? '비가동 ' + fmt(r.downMin) + '분 제외 · ' + (r.netMin / r.totMin * 100).toFixed(1) + '%' : '비가동 ' + fmt(r.downMin) + '분', 'mute') +
+    kp('납기 지연/임박', r.orderSt.length ? r.late.length + ' / ' + r.soon.length + '건' : '-', r.orderSt.length ? '전체 ' + r.orderSt.length + '건' : '수주 미입력', !r.orderSt.length ? 'mute' : r.late.length ? 'bad' : (r.soon.length ? 'warn' : 'ok')) +
+    kp('재공·자재 경고', (DB.wip.length || DB.mat.length) ? (r.wipOver.length + r.matShort.length) + '건' : '-', (DB.wip.length || DB.mat.length) ? '재공초과 ' + r.wipOver.length + ' · 자재부족 ' + r.matShort.length : '미입력', !(DB.wip.length || DB.mat.length) ? 'mute' : r.matShort.length ? 'bad' : (r.wipOver.length ? 'warn' : 'ok')) +
+    kp('조치 필요 이슈', r.repIss.length + '건', r.repIss.length ? '비고 ' + r.repIss.filter(i => i._src).length + ' · 직접입력 ' + r.repIss.filter(i => !i._src).length : '없음', r.repIss.some(i => i.status === '미조치') ? 'bad' : (r.repIss.length ? 'warn' : 'ok'));
+  const tile = { 가동: 'ok', 셋업: 'info', 정지: 'warn', 고장: 'bad' };
+  const tiles = DB.mstat.length ? '<div class="tiles">' + DB.mstat.map(m => '<div class="tile ' + tile[m.status] + '"><b>' + esc(m.name) + '</b><span>' + esc(m.status) +
+    (m.status !== '가동' ? ' ' + dur(hoursSince(m.since)) : '') + '</span></div>').join('') + '</div>' : empty('입력 없음');
+  const dm = {}; DB.mdown.filter(x => x.date === b).forEach(x => dm[x.reason] = (dm[x.reason] || 0) + num(x.min));
+  const qm = {}; DB.qual.filter(x => x.date === b).forEach(x => qm[x.type] = (qm[x.type] || 0) + num(x.qty));
+  const ord = r.orderSt.filter(o => o.st === '지연' || o.st === '임박').sort((x, y) => x.d - y.d);
+  const ot = ord.length ? '<table><tr><th>수주</th><th>고객</th><th>품목</th><th>납기</th><th>잔량</th><th>상태</th></tr>' + ord.slice(0, 6).map(o => '<tr><td>' + esc(o.no) + '</td><td>' + esc(o.cust) +
+    '</td><td>' + esc(o.item) + '</td><td>' + esc((o.due || '').slice(5)) + '</td><td>' + fmt(o.left) + '</td><td>' + chip(o.st === '지연' ? '지연 D+' + Math.abs(o.d) : '임박 D-' + o.d, o.st === '지연' ? 'bad' : 'warn') + '</td></tr>').join('') + '</table>' +
+    (ord.length > 6 ? '<div class="desc">외 ' + (ord.length - 6) + '건 (납기·수주 탭 참고)</div>' : '')
+    : '<div class="empty t-ok">지연·임박 오더 없음</div>';
+  const w = [];
+  r.matShort.forEach(m => w.push('<li><span class="t-bad">자재 부족</span> ' + esc(m.item) + ' (' + fmt(m.stock) + ' / 필요 ' + fmt(m.need) + ')</li>'));
+  r.wipOver.forEach(x => w.push('<li><span class="t-warn">재공 초과</span> ' + esc(x.proc) + ' (' + fmt(x.qty) + ' / 한도 ' + fmt(x.limit) + ')</li>'));
+  const it = r.repIss.slice(0, 8).map(i => '<li>' + (i._src ? '<span class="t-' + (i.status === '미조치' ? 'bad' : 'warn') + '">' + esc(String(i.when).slice(11, 16)) + '</span> '
+    : '<span class="t-' + lo(i.h, c.issueWarn, c.issueBad) + '">' + dur(i.h) + '</span> ') + esc(i.text) + (i.owner ? ' · ' + esc(i.owner) : '') + ' · ' + esc(i.status) + '</li>');
+  const memo = DB.memo ? esc(DB.memo).replace(/\n/g, '<br>') : '<span style="color:#6b7785">(입력 데이터 영역의 "종합 의견"에 작성하면 여기에 표시됩니다)</span>';
+  return '<div class="btns"><button data-act="print">결과 리포트 인쇄 / PDF 저장</button></div>' +
+    '<div class="sheet"><div class="sh-head"><h2>생산 현황 결과 리포트</h2><div>기준일 ' + esc(b) + ' · 작성 ' + esc(DB.author || '-') + ' · 출력 ' + esc(isoDT(new Date()).replace('T', ' ')) + '</div></div>' +
+    '<div class="kps">' + kpis + '</div>' +
+    '<div class="sh-grid">' + panel('시간대별 목표 vs 양품', pd.slots.length ? slotChart(pd.slots) : empty()) +
+    '<div>' + panel('라인별 달성률', pd.rows.length ? lineBars(pd.lines) : empty()) + panel('설비 상태', tiles) + '</div></div>' +
+    '<div class="sh-grid">' + panel('불량 유형 TOP5', pareto(qm, DB.unit || '개', 5)) + panel('비가동 사유 TOP3', pareto(dm, '분', 3)) + '</div>' +
+    '<div class="sh-grid">' + panel('납기 지연·임박 오더', ot) + panel('경고 항목 (자재·재공) / 조치 필요 이슈',
+      '<ul class="alerts">' + (w.slice(0, 5).concat(it).join('') || '<li class="t-ok">경고 없음</li>') + '</ul>' +
+      (w.length > 5 ? '<div class="desc">자재·재공 경고 외 ' + (w.length - 5) + '건 (재공·자재 탭 참고)</div>' : '') +
+      (r.repIss.length > 8 ? '<div class="desc">조치 필요 이슈 외 ' + (r.repIss.length - 8) + '건 (이슈 탭 참고)</div>' : '')) + '</div>' +
+    panel('종합 의견', '<div class="memo">' + memo + '</div>') + '</div>';
+}
+function extraReport() {
+  return '<div class="ttl">결과 리포트 작성 정보</div><div class="cfg"><label>작성자<input type="text" style="width:160px;text-align:left" data-memo="author" value="' + esc(DB.author) + '"></label></div>' +
+    '<div class="ttl">종합 의견 / 특이사항 (리포트 하단에 표시)</div><textarea data-memo="memo" rows="4" style="width:100%;font:inherit;padding:6px">' + esc(DB.memo) + '</textarea>' +
+    '<p class="desc">리포트의 숫자와 그래프는 각 파트 탭의 입력값에서 자동으로 만들어집니다. 종합 의견만 직접 작성합니다.</p>';
+}
+
+function visCfg() {
+  return panel('판정 기준 (색상 경고 기준)', '<div class="cfg">' + Object.keys(CFG_DEF).map(k =>
+    '<label>' + CFG_LABEL[k] + '<input type="number" data-cfg="' + k + '" value="' + num(DB.cfg[k]) + '"></label>').join('') + '</div>') +
+    panel('수량 단위', '<div class="cfg"><label>화면에 표시할 수량 단위 (개, m 등)<input type="text" style="width:80px;text-align:left" data-memo="unit" value="' + esc(DB.unit || '개') + '"></label></div>' +
+      '<p class="desc">엑셀을 가져오면 파일에 적힌 단위로 자동 설정됩니다.</p>') +
+    panel('데이터 백업 / 복원', '<div class="btns"><button data-act="export">전체 백업(JSON 저장)</button>' +
+      '<label class="btn">백업 불러오기<input type="file" id="importFile" accept=".json" style="display:none"></label></div>' +
+      '<p class="desc">입력 데이터는 이 브라우저에 자동 저장됩니다. 다른 PC로 옮기거나 보관할 때는 백업 파일을 사용하세요.</p>');
+}
+
+/* =====================================================================
+   엑셀 생산일지 가져오기
+   .xlsx(ZIP+XML)를 외부 라이브러리 없이 직접 읽고, 머리글 이름으로 필요한 열만 추출해
+   계획·실적 / 설비(비가동) / 품질(불량) 입력표에 자동 적용합니다.
+   ===================================================================== */
+function zipIndex(buf) {
+  const u8 = new Uint8Array(buf), dv = new DataView(buf);
+  let e = u8.length - 22;
+  while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('엑셀(.xlsx) 파일이 아닙니다.');
+  const n = dv.getUint16(e + 10, true);
+  let p = dv.getUint32(e + 16, true);
+  const files = {};
+  for (let i = 0; i < n && dv.getUint32(p, true) === 0x02014b50; i++) {
+    const nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+    files[new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nl))] = { m: dv.getUint16(p + 10, true), cs: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) };
+    p += 46 + nl + el + cl;
+  }
+  return { u8, dv, files };
+}
+async function zipText(z, name) {
+  const f = z.files[name];
+  if (!f) return null;
+  const o = f.off, start = o + 30 + z.dv.getUint16(o + 26, true) + z.dv.getUint16(o + 28, true);
+  const data = z.u8.subarray(start, start + f.cs);
+  let out;
+  if (f.m === 0) out = data;
+  else if (f.m === 8) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('이 브라우저는 엑셀 압축 해제를 지원하지 않습니다. 최신 Chrome/Edge를 사용하세요.');
+    out = new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  } else throw new Error('지원하지 않는 압축 방식의 파일입니다.');
+  return new TextDecoder('utf-8').decode(out);
+}
+const xml = s => new DOMParser().parseFromString(s, 'application/xml');
+const colIdx = ref => { let n = 0; for (const ch of ref.replace(/\d/g, '')) n = n * 26 + ch.charCodeAt(0) - 64; return n; };
+
+async function readXlsx(buf) {
+  const z = zipIndex(buf);
+  const wbTxt = await zipText(z, 'xl/workbook.xml');
+  if (!wbTxt) throw new Error('엑셀(.xlsx) 파일이 아닙니다.');
+  const rels = {};
+  [...xml(await zipText(z, 'xl/_rels/workbook.xml.rels')).getElementsByTagName('Relationship')].forEach(r => rels[r.getAttribute('Id')] = r.getAttribute('Target'));
+  const ss = [], sst = await zipText(z, 'xl/sharedStrings.xml');
+  if (sst) [...xml(sst).getElementsByTagName('si')].forEach(si => {
+    let t = '';
+    for (const ch of si.children) {
+      if (ch.localName === 't') t += ch.textContent;
+      else if (ch.localName === 'r') { const x = [...ch.children].find(c => c.localName === 't'); if (x) t += x.textContent; }
+    }
+    ss.push(t);
+  });
+  const sheets = [];
+  for (const s of xml(wbTxt).getElementsByTagName('sheet')) {
+    let tg = rels[s.getAttribute('r:id')] || '';
+    tg = tg.startsWith('/') ? tg.slice(1) : 'xl/' + tg;
+    const txt = await zipText(z, tg);
+    if (!txt) continue;
+    const g = {};
+    let maxR = 0, maxC = 0;
+    for (const c of xml(txt).getElementsByTagName('c')) {
+      const ref = c.getAttribute('r'), t = c.getAttribute('t'), vEl = c.getElementsByTagName('v')[0];
+      let val = null;
+      if (t === 'inlineStr') val = [...c.getElementsByTagName('t')].map(x => x.textContent).join('');
+      else if (vEl) {
+        const raw = vEl.textContent;
+        if (t === 's') val = ss[+raw]; else if (t === 'str') val = raw; else if (t === 'b') val = raw === '1';
+        else if (t === 'e') val = null;                       // #DIV/0! 같은 오류값은 무시
+        else val = raw === '' ? null : Number(raw);
+      }
+      if (val == null) continue;
+      const r = +ref.replace(/\D/g, ''), cc = colIdx(ref);
+      (g[r] = g[r] || {})[cc] = val;
+      maxR = Math.max(maxR, r); maxC = Math.max(maxC, cc);
+    }
+    sheets.push({ name: s.getAttribute('name'), g, maxR, maxC });
+  }
+  return sheets;
+}
+
+const nz = s => String(s == null ? '' : s).replace(/\s+/g, '');
+const round2 = v => Math.round(v * 100) / 100;
+const hhmm = m => pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60);
+function toMin(v) {
+  if (typeof v === 'number') return Math.round((v - Math.floor(v)) * 1440);
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(v || ''));
+  return m ? +m[1] * 60 + +m[2] : null;
+}
+
+/* 생산일지 시트 1개에서 필요한 값만 추출 (머리글 '생산일자' 가 있는 시트만 대상) */
+function extractLog(sh, ctx) {
+  const g = sh.g;
+  let hr = 0;
+  for (let r = 1; r <= Math.min(sh.maxR, 30) && !hr; r++) for (const c in (g[r] || {})) if (nz(g[r][c]) === '생산일자') hr = r;
+  if (!hr) return null;
+  let title = '';
+  for (let r = 1; r < hr && !title; r++) for (const c in (g[r] || {})) {
+    if (typeof g[r][c] === 'string' && /생산\s*일지|\d{4}\s*[.\-\/]\s*\d{1,2}/.test(g[r][c])) { title = g[r][c]; break; }
+  }
+  let unit = '';   // 시트의 "(단위: m, 분, m/분)" 표기에서 수량 단위(첫 항목)를 읽음
+  for (let r = 1; r < hr && !unit; r++) for (const c in (g[r] || {})) {
+    const u = typeof g[r][c] === 'string' && /단위\s*[:：]\s*([^,\s)]+)/.exec(g[r][c]);
+    if (u) { unit = u[1]; break; }
+  }
+  const ym = /(\d{4})\s*[.\-\/년]\s*(\d{1,2})/.exec(title), mm = /(\d{1,2})\s*월/.exec(sh.name);
+  const year = ym ? +ym[1] : ctx.year, month = ym ? +ym[2] : (mm ? +mm[1] : null);
+  const machine = title.replace(/\([^)]*\)/g, '').replace(/생산\s*일지/g, '').replace(/\s+/g, ' ').trim() || sh.name;
+
+  // 머리글(2단) → 열 목록. 병합된 상위 머리글은 오른쪽 열로 이어서 적용
+  const heads = [];
+  let grp = '';
+  for (let c = 1; c <= sh.maxC; c++) {
+    const m = nz((g[hr] || {})[c]), s = nz((g[hr + 1] || {})[c]);
+    if (m) grp = m;
+    if (!m && !s) continue;
+    heads.push({ c, grp: m || grp, sub: s, name: String((g[hr + 1] || {})[c] || '').trim() });
+  }
+  const one = (grp2, sub) => (heads.find(h => h.grp === grp2 && h.sub === (sub || '')) || {}).c;
+  const many = grp2 => heads.filter(h => h.grp === grp2 && h.sub && h.sub !== '합계');
+  const cDate = one('생산일자'), cGood = one('양품량'), cSpeed = one('이론속도');
+  const cSt = one('작업시간', '시작'), cEn = one('작업시간', '종료'), cTot = one('시간가동율', '총가동');
+  const cIn = many('투입량'), cDef = many('불량내역'), cDown = many('공가동내역');
+  const cDefSum = one('불량내역', '합계'), cDownSum = one('공가동내역', '합계');
+  const cNote = (heads.find(h => /비고/.test(nz(h.grp)) || /비고/.test(nz(h.name))) || {}).c;   // 비고 → 조치 필요 이슈
+  if (!cDate || !cSt || !cEn || !cGood) throw new Error("'" + sh.name + "' 시트에서 필수 열(생산일자, 작업시간 시작/종료, 양품량)을 찾지 못했습니다.");
+
+  const rows = [];
+  let skipped = 0, summary = null;
+  for (let r = hr + 2; r <= sh.maxR; r++) {
+    const row = g[r];
+    if (!row) continue;
+    const dv = row[cDate];
+    if (typeof dv === 'string' && /누계|합계|총계/.test(dv)) { if (!summary) summary = row; continue; }   // 합계 행은 검증용으로만 사용
+    if (typeof dv !== 'number') continue;
+    let date;
+    if (dv >= 1 && dv <= 31) {
+      if (!year || !month) { skipped++; continue; }
+      date = year + '-' + pad(month) + '-' + pad(Math.floor(dv));
+    } else if (dv > 40000) {
+      const d = new Date(Date.UTC(1899, 11, 30) + dv * 864e5);
+      date = d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate());
+    } else { skipped++; continue; }
+    const st = toMin(row[cSt]), en = toMin(row[cEn]);
+    if (st == null || en == null) { skipped++; continue; }
+    let tot = en - st;
+    if (tot < 0) tot += 1440;                                  // 자정 넘김
+    if (tot === 0) { skipped++; continue; }
+    // 투입량: 자재 열(G/F~필름) 중 첫 번째 값 (필름 열은 2폭이라 값이 2배로 적히는 경우가 있어 합계/최대값 사용 금지)
+    const inp = cIn.map(h => row[h.c]).filter(v => typeof v === 'number').find(v => v) || 0;
+    const def = {}, down = {};
+    let defSum = 0, downSum = 0;
+    cDef.forEach(h => { const v = num(row[h.c]); if (v) { def[h.name] = v; defSum += v; } });
+    cDown.forEach(h => { const v = num(row[h.c]); if (v) { down[h.name] = v; downSum += v; } });
+    const note = cNote && row[cNote] != null ? String(row[cNote]).trim() : '';
+    rows.push({ date, st, en, tot, speed: cSpeed ? num(row[cSpeed]) : 0, inp, good: num(row[cGood]), def, down, defSum, downSum, note });
+  }
+  const sum = f => rows.reduce((s, x) => s + f(x), 0);
+  const recon = [];
+  if (summary) {
+    const chk = (name, mine, sv) => { if (typeof sv === 'number') recon.push({ name, mine, sheet: sv, ok: Math.abs(mine - sv) < 0.5 }); };
+    chk('양품량 합계 (m)', sum(x => x.good), summary[cGood]);
+    if (cTot) chk('총 작업시간 합계 (분)', sum(x => x.tot), summary[cTot]);
+    if (cDownSum) chk('공가동(비가동) 합계 (분)', sum(x => x.downSum), summary[cDownSum]);
+  }
+  const used = new Set([cDate, cGood, cSpeed, cSt, cEn, cTot, cDefSum, cDownSum, cNote].concat(cIn.map(h => h.c), cDef.map(h => h.c), cDown.map(h => h.c)));
+  return {
+    name: sh.name, machine, year, month, rows, skipped, recon, unit, hasNote: !!cNote,
+    types: cDef.map(h => h.name), reasons: cDown.map(h => h.name),
+    unused: heads.filter(h => !used.has(h.c)).map(h => h.sub ? h.grp + '/' + h.name : h.grp)
+  };
+}
+
+/* ---------- 추출 결과를 입력표에 적용 ---------- */
+let IMP = { busy: false, error: '', result: null, backup: null };
+function applyImport(logs, fileName) {
+  IMP.backup = JSON.parse(JSON.stringify({ perf: DB.perf, mdown: DB.mdown, qual: DB.qual, issues: DB.issues, base: DB.base, unit: DB.unit }));
+  const np = [], nd = [], nq = [], ni = [], dates = new Set(), srcs = new Set();
+  const ikey = x => x._src + '|' + x.when + '|' + x.text;
+  const prevIss = {}; DB.issues.forEach(x => { if (x._src) prevIss[ikey(x)] = x; });   // 다시 가져와도 담당·상태(조치중/완료)는 유지
+  logs.forEach(s => {
+    const src = 'xlsx:' + s.machine;
+    srcs.add(src);
+    const dm = {}, qm = {};
+    s.rows.forEach(r => {
+      dates.add(r.date);
+      const target = (DB.imp.mode === 'input' || !(r.speed * r.tot)) ? r.inp : r.speed * r.tot;
+      np.push({ date: r.date, line: s.machine, slot: hhmm(r.st) + '-' + hhmm(r.en), target: round2(target), good: round2(r.good), defect: round2(r.defSum), _src: src });
+      if (r.note) {
+        const it = { when: r.date + 'T' + hhmm(r.st), text: '[' + s.machine + '] ' + r.note, owner: '', status: '미조치', _src: src }, pv = prevIss[ikey(it)];
+        if (pv) { it.owner = pv.owner; it.status = pv.status; }
+        ni.push(it);
+      }
+      Object.entries(r.down).forEach(([k, v]) => { const key = r.date + '\u0001' + k; dm[key] = (dm[key] || 0) + v; });
+      Object.entries(r.def).forEach(([k, v]) => { const key = r.date + '\u0001' + k; qm[key] = (qm[key] || 0) + v; });
+    });
+    Object.entries(dm).forEach(([k, v]) => { const p = k.split('\u0001'); nd.push({ date: p[0], name: s.machine, reason: p[1], min: round2(v), _src: src }); });
+    Object.entries(qm).forEach(([k, v]) => { const p = k.split('\u0001'); nq.push({ date: p[0], proc: s.machine, type: p[1], qty: round2(v), _src: src }); });
+  });
+  if (DB.imp.clear) { DB.perf = []; DB.mdown = []; DB.qual = []; DB.issues = DB.issues.filter(x => !x._src); }   // 이슈는 가져온 비고만 삭제, 직접 입력분 유지
+  else {
+    ['perf', 'mdown', 'qual'].forEach(k => { DB[k] = DB[k].filter(x => !(srcs.has(x._src) && dates.has(x.date))); });   // 같은 파일 재가져오기 시 중복 방지
+    DB.issues = DB.issues.filter(x => !(srcs.has(x._src) && dates.has(String(x.when).slice(0, 10))));
+  }
+  DB.issues = DB.issues.concat(ni);
+  DB.perf = DB.perf.concat(np).sort((a, b) => (a.date + a.slot).localeCompare(b.date + b.slot));
+  DB.mdown = DB.mdown.concat(nd).sort((a, b) => a.date.localeCompare(b.date));
+  DB.qual = DB.qual.concat(nq).sort((a, b) => a.date.localeCompare(b.date));
+  const ds = [...dates].sort();
+  DB.base = ds[ds.length - 1];
+  const un = logs.map(l => l.unit).find(Boolean);
+  if (un) DB.unit = un;                                      // 수량 단위(예: m)를 화면 표기에 반영
+  if ($('#baseDate')) $('#baseDate').value = DB.base;
+  IMP.result = {
+    file: fileName, np: np.length, nd: nd.length, nq: nq.length, ni: ni.length, from: ds[0], to: ds[ds.length - 1], mode: DB.imp.mode,
+    noGood: logs.reduce((s, l) => s + l.rows.filter(r => !r.good).length, 0), logs
+  };
+}
+function undoImport() {
+  if (!IMP.backup) return;
+  Object.assign(DB, IMP.backup);
+  IMP.backup = null; IMP.result = null;
+  if ($('#baseDate')) $('#baseDate').value = DB.base;
+  save(); renderTab();
+}
+async function handleXlsx(file) {
+  IMP.busy = true; IMP.error = '';
+  refreshVis();
+  try {
+    const sheets = await readXlsx(await file.arrayBuffer());
+    const ctx = { year: new Date().getFullYear() }, logs = [];
+    sheets.forEach(sh => { const l = extractLog(sh, ctx); if (l && l.rows.length) logs.push(l); });
+    if (!logs.length) throw new Error("생산일지 형식을 찾지 못했습니다. ('생산일자' 머리글이 있는 시트가 필요합니다. 읽은 시트: " + sheets.map(s => s.name).join(', ') + ')');
+    applyImport(logs, file.name);
+  } catch (e) { IMP.error = e.message || String(e); IMP.result = null; }
+  IMP.busy = false;
+  save(); refreshVis();
+}
+
+function visImport() {
+  const o = DB.imp, R = IMP.result;
+  let h = '<div class="panel"><h3>엑셀 생산일지 가져오기</h3>' +
+    '<label class="dropzone">엑셀 생산일지(.xlsx)를 여기에 끌어다 놓거나 클릭해서 선택하세요<br><span>선택하는 즉시 필요한 항목만 추출해 계획·실적 / 설비 / 품질 화면에 자동 적용됩니다</span>' +
+    '<input type="file" id="xlsxFile" accept=".xlsx" style="display:none"></label>' +
+    '<div class="cfg" style="margin-top:12px;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))">' +
+    '<label>목표 산정 방식<select data-imp="mode" style="width:230px"><option value="theory"' + (o.mode === 'theory' ? ' selected' : '') + '>이론능력 (이론속도 × 총가동시간)</option>' +
+    '<option value="input"' + (o.mode === 'input' ? ' selected' : '') + '>투입량 (투입 대비 양품)</option></select></label>' +
+    '<label>가져오기 전 기존 데이터(계획·실적/비가동/불량) 삭제<input type="checkbox" data-imp="clear" style="width:auto"' + (o.clear ? ' checked' : '') + '></label></div>' +
+    '<p class="mini">같은 파일(또는 같은 설비·날짜의 갱신본)을 다시 가져오면 해당 날짜의 이전 가져오기 데이터만 교체되어 중복되지 않습니다. 직접 입력한 데이터는 건드리지 않습니다. ' +
+    '목표 산정 방식을 바꾼 뒤 같은 파일을 다시 가져오면 새 방식으로 다시 계산됩니다.</p>';
+  if (IMP.busy) h += '<p class="desc">파일을 읽는 중입니다...</p>';
+  if (IMP.error) h += '<p class="t-bad">가져오기 실패: ' + esc(IMP.error) + '</p>';
+  h += '</div>';
+  if (!R) return h + '<p class="desc">엑셀 파일은 이 브라우저 안에서만 처리되며 어디로도 전송되지 않습니다.</p>';
+
+  const cnt = [['계획·실적', R.np, 'perf', '작업 구간별 목표·양품·불량'], ['설비 비가동 이력', R.nd, 'machine', '날짜·사유별 분(min) 합산'], ['품질 불량 내역', R.nq, 'quality', '날짜·유형별 수량(m) 합산'], ['조치 필요 이슈', R.ni, 'issues', '비고 내용 → 결과 리포트에 표시']];
+  h += '<div class="panel"><h3>적용 결과 — ' + esc(R.file) + '</h3><div class="grid cards" style="margin-bottom:10px">' +
+    cnt.map(c => '<div class="card ok" data-go="' + c[2] + '"><div class="l">' + c[0] + '</div><div class="v">' + fmt(c[1]) + '행</div><div class="s">' + c[3] + '</div></div>').join('') + '</div>' +
+    '<p>기간 <b>' + esc(R.from) + ' ~ ' + esc(R.to) + '</b> · 기준일을 최근 데이터일 <b>' + esc(R.to) + '</b> 로 변경했습니다. 카드를 누르면 해당 화면으로 이동합니다. ' +
+    '<button class="btn" data-go="report">결과 리포트 보기</button> <button class="btn" data-act="undoimp">가져오기 되돌리기</button></p></div>';
+  R.logs.forEach(l => {
+    h += '<div class="panel"><h3>시트 \'' + esc(l.name) + '\' · ' + esc(l.machine) + ' (작업 ' + l.rows.length + '건' + (l.skipped ? ', 건너뜀 ' + l.skipped + '건' : '') + ')</h3>';
+    if (l.recon.length) {
+      h += '<div class="ttl" style="margin-top:0">시트의 누계 행과 대조</div><table><tr><th>항목</th><th>이 프로그램 합계</th><th>시트 누계 행</th><th>일치</th></tr>' +
+        l.recon.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + fmt(r.mine) + '</td><td>' + fmt(r.sheet) + '</td><td class="' + (r.ok ? 't-ok' : 't-bad') + '">' + (r.ok ? '일치' : '불일치') + '</td></tr>').join('') + '</table>';
+    } else h += '<p class="mini">시트에 누계 행이 없어 합계 대조는 생략했습니다.</p>';
+    h += '<div class="ttl">추출한 항목</div><table><tr><th>시트의 항목</th><th>화면 항목</th></tr>' +
+      '<tr><td>생산일자 + 작업시간(시작~종료)</td><td>계획·실적: 날짜, 시간대</td></tr>' +
+      '<tr><td>' + (R.mode === 'input' ? '투입량(자재 열 중 첫 값)' : '이론속도 × 총가동시간') + '</td><td>계획·실적: 목표</td></tr>' +
+      '<tr><td>양품량 / 불량내역 합계</td><td>계획·실적: 양품 / 불량</td></tr>' +
+      '<tr><td>공가동 내역: ' + esc(l.reasons.join(', ')) + '</td><td>설비: 비가동 이력 (사유별 분)</td></tr>' +
+      '<tr><td>불량내역: ' + esc(l.types.join(', ')) + '</td><td>품질: 불량 내역 (유형별 수량)</td></tr>' +
+      '<tr><td>비고' + (l.hasNote ? '' : ' (열 없음)') + '</td><td>이상·조치 이력: 내용 (결과 리포트의 조치 필요 이슈)</td></tr></table>' +
+      '<p class="mini">사용하지 않은 열: ' + esc(l.unused.join(', ') || '없음') + '</p></div>';
+  });
+  if (R.noGood) h += '<p class="mini">참고: 양품량이 비어 있는 작업 ' + R.noGood + '건(테스트 가공 등)은 목표와 가동 시간만 반영되어 달성률을 낮춥니다.</p>';
+  return h;
+}
+
+/* ---------- 탭 정의: 파트 = 화면 + 입력표 ---------- */
+const PARTS = [
+  { id: 'home', name: '종합 현황', vis: visHome, tables: [], d: '모든 파트의 입력값을 모아 한눈에 보여줍니다. 입력은 각 파트 탭에서 합니다.' },
+  { id: 'report', name: '결과 리포트', vis: visReport, tables: [], extra: extraReport, d: '최종 결과물: 모든 파트의 입력값을 A4 한 장으로 요약합니다. 인쇄 또는 PDF로 저장해 보고·공유에 사용하세요.' },
+  { id: 'import', name: '데이터 가져오기', vis: visImport, tables: [], d: '엑셀 생산일지를 올리면 필요한 항목만 추출해 계획·실적 / 설비 / 품질 화면에 자동 적용합니다.' },
+  { id: 'perf', name: '계획·실적', vis: visPerf, tables: ['perf'], d: '입력: 날짜·라인·시간대별 목표/양품/불량 → 보여주는 모습: 시간대별 막대, 라인별 달성률' },
+  { id: 'machine', name: '설비', vis: visMachine, tables: ['mstat', 'mdown'], d: '입력: 설비 현재 상태, 비가동 이력(사유·분) → 보여주는 모습: 설비 신호등, 비가동 파레토' },
+  { id: 'quality', name: '품질', vis: visQuality, tables: ['qual'], d: '입력: 불량 유형·공정·수량 → 보여주는 모습: 불량 파레토, 불량률, 일별 추이' },
+  { id: 'wip', name: '재공·자재', vis: visWip, tables: ['wip', 'mat'], d: '입력: 공정별 재공/한도, 자재 재고/필요량 → 보여주는 모습: 한도 초과, 자재 부족 경고' },
+  { id: 'orders', name: '납기·수주', vis: visOrders, tables: ['orders'], d: '입력: 수주 수량·납기·완료수량 → 보여주는 모습: 진행률, D-day, 지연/임박 판정' },
+  { id: 'issues', name: '이상·조치', vis: visIssues, tables: ['issues'], d: '입력: 발생 시각·내용·담당·상태 → 보여주는 모습: 미조치 이슈와 경과 시간' },
+  { id: 'cfg', name: '기준·관리', vis: visCfg, tables: [], d: '색상 판정 기준을 정하고, 데이터를 백업/복원합니다.' }
+];
+
+/* ---------- 입력표 ---------- */
+function cell(key, i, c, v) {
+  const a = 'data-k="' + key + '" data-i="' + i + '" data-f="' + c.k + '"';
+  if (c.t === 'select') return '<select ' + a + '>' + c.o.map(o => '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
+  return '<input ' + a + (c.dl ? ' list="' + c.dl + '"' : '') + ' type="' + c.t + '" value="' + esc(v) + '">';
+}
+function dlHTML() {   // 사유/불량 유형 입력 시 자동완성 후보 (기본값 + 이미 입력된 값)
+  const mk = (id, base, rows, k) => '<datalist id="' + id + '">' + [...new Set(base.concat(rows.map(x => x[k]).filter(Boolean)))].map(v => '<option value="' + esc(v) + '">').join('') + '</datalist>';
+  return mk('dl_reason', REASONS, DB.mdown, 'reason') + mk('dl_defect', DEFECTS, DB.qual, 'type');
+}
+function tableHTML(key) {
+  const s = SCHEMA[key];
+  let h = '<div class="ttl">' + s.title + ' <span style="color:#6b7785;font-weight:normal">(' + DB[key].length + '행)</span></div>' +
+    '<div class="btns"><button data-add="' + key + '">+ 행 추가</button><button data-csv="' + key + '">CSV 저장</button></div>' +
+    '<div style="overflow-x:auto"><table class="in"><thead><tr>' + s.cols.map(c => '<th>' + c.l + '</th>').join('') + '<th></th></tr></thead><tbody>';
+  DB[key].forEach((r, i) => { h += '<tr>' + s.cols.map(c => '<td>' + cell(key, i, c, r[c.k]) + '</td>').join('') + '<td><button class="x" data-del="' + key + ':' + i + '" title="삭제">✕</button></td></tr>'; });
+  return h + '</tbody></table></div>';
+}
+
+/* ---------- 렌더 ---------- */
+function part() { return PARTS.find(p => p.id === DB.tab) || PARTS[0]; }
+const NAV_GROUPS = [['요약', ['home', 'report']], ['데이터', ['import']], ['파트별 입력·현황', ['perf', 'machine', 'quality', 'wip', 'orders', 'issues']], ['설정', ['cfg']]];
+function renderTabs() {
+  $('#tabs').innerHTML = NAV_GROUPS.map(g => '<div class="grp">' + g[0] + '</div>' + g[1].map(id => {
+    const p = PARTS.find(x => x.id === id);
+    return p ? '<button data-tab="' + p.id + '" class="' + (p.id === DB.tab ? 'on' : '') + '">' + p.name + '</button>' : '';
+  }).join('')).join('');
+}
+function refreshVis() { $('#vis').innerHTML = part().vis(); }
+function renderTab() {
+  const p = part();
+  renderTabs();
+  $('#desc').textContent = p.d;
+  $('#inputs').innerHTML = p.tables.map(tableHTML).join('') + (p.extra ? p.extra() : '') + dlHTML();
+  $('#inwrap').style.display = (p.tables.length || p.extra) ? '' : 'none';
+  refreshVis();
+}
+function csvDownload(key) {
+  const s = SCHEMA[key], q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const txt = [s.cols.map(c => q(c.l)).join(',')].concat(DB[key].map(r => s.cols.map(c => q(r[c.k])).join(','))).join('\r\n');
+  dl('﻿' + txt, key + '.csv', 'text/csv;charset=utf-8');
+}
+function dl(text, name, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- 이벤트 ---------- */
+function onEdit(e) {
+  const t = e.target, d = t.dataset || {};
+  const inVis = t.closest && t.closest('#vis');   // 화면(#vis) 안의 입력칸은 다시 그리면 커서가 사라지므로 갱신하지 않음
+  if (d.f) { DB[d.k][+d.i][d.f] = t.type === 'number' ? num(t.value) : t.value; save(); refreshVis(); }
+  else if (d.cfg) { DB.cfg[d.cfg] = num(t.value); save(); if (!inVis) refreshVis(); }
+  else if (d.memo) { DB[d.memo] = t.value; save(); if (!inVis) refreshVis(); }
+  else if (d.imp) { DB.imp[d.imp] = t.type === 'checkbox' ? t.checked : t.value; save(); }
+  else if (t.id === 'baseDate') { if (t.value) { DB.base = t.value; save(); refreshVis(); } }
+}
+function onClick(e) {
+  const t = e.target.closest ? e.target.closest('[data-tab],[data-go],[data-add],[data-del],[data-csv],[data-act]') : null;
+  if (!t) return;
+  const d = t.dataset;
+  if (d.tab || d.go) { DB.tab = d.tab || d.go; save(); renderTab(); window.scrollTo(0, 0); }
+  else if (d.add) { DB[d.add].push(SCHEMA[d.add].def()); save(); renderTab(); }
+  else if (d.del) { const [k, i] = d.del.split(':'); DB[k].splice(+i, 1); save(); renderTab(); }
+  else if (d.csv) csvDownload(d.csv);
+  else if (d.act === 'sample') { if (!Object.keys(SCHEMA).some(k => DB[k].length) || confirm('현재 입력된 데이터가 샘플로 대체됩니다. 계속할까요?')) { sample(); renderTab(); } }
+  else if (d.act === 'clear') { if (confirm('입력한 모든 데이터를 삭제합니다. 계속할까요?')) { const keep = DB.cfg; DB = blank(); DB.cfg = keep; IMP.backup = null; IMP.result = null; save(); $('#baseDate').value = DB.base; renderTab(); } }
+  else if (d.act === 'tv') setTV(!document.body.classList.contains('tv'));
+  else if (d.act === 'undoimp') undoImport();
+  else if (d.act === 'print') window.print();
+  else if (d.act === 'export') dl(JSON.stringify(DB, null, 1), 'visual_mgmt_backup_' + isoD(new Date()) + '.json', 'application/json');
+}
+/* TV 모드: 머리글·메뉴를 숨기므로 Esc / 전체화면 해제 시 반드시 빠져나오게 함 */
+function setTV(on) {
+  document.body.classList.toggle('tv', on);
+  const fs = document.fullscreenElement;
+  if (on && !fs && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+  if (!on && fs && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+}
+function onImport(e) {
+  if (e.target.id !== 'importFile' || !e.target.files[0]) return;
+  const f = e.target.files[0];
+  e.target.value = '';   // 같은 파일을 다시 선택해도 동작하도록
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const o = JSON.parse(fr.result);
+      if (!o || typeof o !== 'object' || Array.isArray(o)) throw 0;
+      const nd = Object.assign(blank(), o);
+      Object.keys(SCHEMA).forEach(k => { if (!Array.isArray(nd[k])) nd[k] = []; });
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(nd.base)) nd.base = isoD(new Date());
+      nd.cfg = Object.assign({}, CFG_DEF, nd.cfg);
+      nd.imp = Object.assign({ mode: 'theory', clear: false }, nd.imp);
+      DB = nd; IMP.backup = null; IMP.result = null;
+      save(); $('#baseDate').value = DB.base; renderTab();
+    } catch (x) { alert('백업 파일을 읽을 수 없습니다.'); }
+  };
+  fr.readAsText(f);
+}
+
+function init() {
+  $('#baseDate').value = DB.base;
+  document.addEventListener('input', onEdit);
+  document.addEventListener('change', e => {
+    onEdit(e); onImport(e);
+    if (e.target.id === 'xlsxFile' && e.target.files[0]) { const f = e.target.files[0]; e.target.value = ''; handleXlsx(f); }
+  });
+  document.addEventListener('click', onClick);
+  const dz = e => e.target.closest && e.target.closest('.dropzone');
+  // 드롭존 밖에 파일을 떨어뜨려도 브라우저가 파일을 열며 화면을 벗어나지 않도록 기본 동작을 막음
+  document.addEventListener('dragover', e => { e.preventDefault(); const z = dz(e); if (z) z.classList.add('over'); });
+  document.addEventListener('dragleave', e => { const z = dz(e); if (z && !z.contains(e.relatedTarget)) z.classList.remove('over'); });
+  document.addEventListener('drop', e => { e.preventDefault(); const z = dz(e); if (z) { z.classList.remove('over'); if (e.dataTransfer.files[0]) handleXlsx(e.dataTransfer.files[0]); } });
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) document.body.classList.remove('tv'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('tv')) setTV(false); });
+  setInterval(() => { if (DB.tab !== 'import' && DB.tab !== 'cfg') refreshVis(); }, 60000);   // 경과 시간 자동 갱신
+  renderTab();
+}
+if (typeof window !== 'undefined' && !window.__VM_TEST__) init();
+</script>
+</body>
+</html>
